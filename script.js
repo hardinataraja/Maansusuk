@@ -24,15 +24,11 @@ let cart = [];
 // === KEAMANAN & ROLE ===
 function checkAccess() {
     const role = localStorage.getItem("userRole");
-    
-    // Jika tidak ada session login, tendang ke login.html
     onAuthStateChanged(auth, (user) => {
         if (!user) {
             window.location.href = "login.html";
         }
     });
-
-    // Jika admin, tambahkan class ke body untuk memunculkan tombol edit/hapus
     if (role === "admin") {
         document.body.classList.add("is-admin");
     }
@@ -130,10 +126,44 @@ document.getElementById("btnCheckout").addEventListener("click", async () => {
     }
 });
 
-// === DRIVER & PRODUCT ACTIONS (ADMIN ONLY LOGIC) ===
+// === DRIVER ACTIONS ===
+window.editDriver = (id, name, plate, wa) => {
+    document.getElementById("editDriverId").value = id;
+    document.getElementById("editDriverName").value = name;
+    document.getElementById("editDriverPlate").value = plate;
+    document.getElementById("editDriverWA").value = wa;
+    openModal("editDriverModal");
+};
+
+// --- FUNGSI UPDATE DRIVER (TAMBAHAN PERBAIKAN) ---
+window.updateDriver = async () => {
+    const id = document.getElementById("editDriverId").value;
+    const name = document.getElementById("editDriverName").value;
+    const plate = document.getElementById("editDriverPlate").value;
+    const wa = document.getElementById("editDriverWA").value;
+
+    if(!id || !name) return;
+
+    try {
+        await updateDoc(doc(db, "drivers", id), {
+            name: name,
+            plate: plate,
+            wa: wa
+        });
+        closeModal("editDriverModal");
+        Swal.fire("Berhasil!", "Data driver diperbarui", "success");
+    } catch (e) {
+        Swal.fire("Gagal", e.toString(), "error");
+    }
+};
+
+window.deleteDriver = async (id, name) => {
+    const res = await Swal.fire({ title: 'Hapus?', text: name, icon: 'warning', showCancelButton: true });
+    if(res.isConfirmed) await deleteDoc(doc(db, "drivers", id));
+};
+
 window.payCommission = async (id, name, amount) => {
     if(localStorage.getItem("userRole") !== "admin") return Swal.fire("Akses Ditolak", "Hanya Admin yang bisa bayar komisi", "error");
-    // ... logika bayar ...
     const res = await Swal.fire({ title: 'Bayar Komisi?', text: `Lunas Rp ${amount.toLocaleString()}?`, icon: 'warning', showCancelButton: true });
     if(res.isConfirmed) {
         await updateDoc(doc(db, "drivers", id), { unpaidCommission: 0 });
@@ -146,25 +176,35 @@ window.sendWaReminder = (wa, name, amount) => {
     window.open(`https://wa.me/62${wa.replace(/^0/, '')}?text=${encodeURIComponent(msg)}`, '_blank');
 };
 
-window.editDriver = (id, name, plate, wa) => {
-    document.getElementById("editDriverId").value = id;
-    document.getElementById("editDriverName").value = name;
-    document.getElementById("editDriverPlate").value = plate;
-    document.getElementById("editDriverWA").value = wa;
-    openModal("editDriverModal");
-};
-
-window.deleteDriver = async (id, name) => {
-    const res = await Swal.fire({ title: 'Hapus?', text: name, icon: 'warning', showCancelButton: true });
-    if(res.isConfirmed) await deleteDoc(doc(db, "drivers", id));
-};
-
+// === PRODUCT ACTIONS ===
 window.editProduct = (id, name, price, stock) => {
     document.getElementById("editProductId").value = id;
     document.getElementById("editProductName").value = name;
     document.getElementById("editProductPrice").value = price;
     document.getElementById("editProductStock").value = stock;
     openModal("editProductModal");
+};
+
+// --- FUNGSI UPDATE PRODUK (TAMBAHAN PERBAIKAN) ---
+window.updateProduct = async () => {
+    const id = document.getElementById("editProductId").value;
+    const name = document.getElementById("editProductName").value;
+    const price = Number(document.getElementById("editProductPrice").value);
+    const stock = Number(document.getElementById("editProductStock").value);
+
+    if(!id || !name) return;
+
+    try {
+        await updateDoc(doc(db, "products", id), {
+            name: name,
+            price: price,
+            stock: stock
+        });
+        closeModal("editProductModal");
+        Swal.fire("Berhasil!", "Data produk diperbarui", "success");
+    } catch (e) {
+        Swal.fire("Gagal", e.toString(), "error");
+    }
 };
 
 window.deleteProduct = async (id, name) => {

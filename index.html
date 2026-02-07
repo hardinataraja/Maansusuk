@@ -134,7 +134,7 @@
 <div class="modal" id="editDriverModal">
     <div class="modal-content">
         <h3>Edit Driver</h3>
-        <form id="editDriverForm">
+        <form id="editDriverForm" onsubmit="event.preventDefault(); updateDriver();">
             <input type="hidden" id="editDriverId">
             <input id="editDriverName" placeholder="Nama" required>
             <input id="editDriverPlate" placeholder="Plat" required>
@@ -144,6 +144,7 @@
         </form>
     </div>
 </div>
+
 <div class="modal" id="productModal">
     <div class="modal-content">
         <h3>Tambah Produk</h3>
@@ -159,7 +160,7 @@
 <div class="modal" id="editProductModal">
     <div class="modal-content">
         <h3>Edit Produk / Tambah Stok</h3>
-        <form id="editProductForm">
+        <form id="editProductForm" onsubmit="event.preventDefault(); updateProduct();">
             <input type="hidden" id="editProductId">
             <input id="editProductName" placeholder="Nama Produk" required>
             <input type="number" id="editProductPrice" placeholder="Harga Jual" required>
@@ -169,6 +170,7 @@
         </form>
     </div>
 </div>
+
 <script type="module" src="script.js"></script>
 </body>
 </html>
