@@ -18,8 +18,10 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// Global State
 let cart = [];
 
+// === KEAMANAN & ROLE ===
 function checkAccess() {
     const role = localStorage.getItem("userRole");
     onAuthStateChanged(auth, (user) => {
@@ -35,6 +37,7 @@ window.logout = () => {
     });
 };
 
+// === UI NAVIGATION ===
 window.showSection = (id, btn) => {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -45,7 +48,41 @@ window.showSection = (id, btn) => {
 window.openModal = (id) => document.getElementById(id).classList.add('show');
 window.closeModal = (id) => document.getElementById(id).classList.remove('show');
 
-// KASIR
+// === FUNGSI TAMBAH DATA BARU (CREATE) ===
+// Tambah Driver
+document.getElementById("addDriverForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+        await addDoc(collection(db, "drivers"), {
+            name: document.getElementById("driverName").value,
+            plate: document.getElementById("driverPlate").value,
+            wa: document.getElementById("driverWA").value,
+            unpaidCommission: 0,
+            createdAt: serverTimestamp()
+        });
+        closeModal("driverModal");
+        document.getElementById("addDriverForm").reset();
+        Swal.fire("Berhasil", "Driver baru ditambahkan", "success");
+    } catch (e) { Swal.fire("Error", e.message, "error"); }
+});
+
+// Tambah Produk
+document.getElementById("addProductForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+        await addDoc(collection(db, "products"), {
+            name: document.getElementById("productName").value,
+            price: Number(document.getElementById("productPrice").value),
+            stock: Number(document.getElementById("productStock").value),
+            createdAt: serverTimestamp()
+        });
+        closeModal("productModal");
+        document.getElementById("addProductForm").reset();
+        Swal.fire("Berhasil", "Produk baru ditambahkan", "success");
+    } catch (e) { Swal.fire("Error", e.message, "error"); }
+});
+
+// === KASIR LOGIC ===
 document.getElementById("btnAddItem").addEventListener("click", () => {
     const sel = document.getElementById("selectProduct");
     const opt = sel.options[sel.selectedIndex];
@@ -69,9 +106,9 @@ function renderCart() {
 document.getElementById("btnCheckout").addEventListener("click", async () => {
     const driverId = document.getElementById("selectDriver").value;
     if(!driverId || cart.length === 0) return Swal.fire("Oops!", "Pilih driver & isi keranjang", "warning");
-    const result = await Swal.fire({ title: 'Simpan Transaksi?', text: "Stok otomatis terpotong!", icon: 'question', showCancelButton: true });
+    const res = await Swal.fire({ title: 'Simpan Transaksi?', text: "Stok akan terpotong!", icon: 'question', showCancelButton: true });
 
-    if (result.isConfirmed) {
+    if (res.isConfirmed) {
         try {
             let total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
             let comm = total * 0.5;
@@ -87,13 +124,21 @@ document.getElementById("btnCheckout").addEventListener("click", async () => {
                 transaction.update(doc(db, "drivers", driverId), { unpaidCommission: increment(comm) });
                 transaction.set(doc(collection(db, "transactions")), { driverId, items: cart, totalPrice: total, totalCommission: comm, createdAt: serverTimestamp() });
             });
-            Swal.fire("Berhasil!", "Transaksi disimpan", "success");
+            Swal.fire("Berhasil!", "Transaksi selesai", "success");
             cart = []; renderCart();
         } catch (e) { Swal.fire("Gagal", e.toString(), "error"); }
     }
 });
 
-// ACTIONS (EDIT/DELETE)
+// === ACTIONS (EDIT/DELETE/PAY) ===
+window.editDriver = (id, n, p, w) => {
+    document.getElementById("editDriverId").value = id;
+    document.getElementById("editDriverName").value = n;
+    document.getElementById("editDriverPlate").value = p;
+    document.getElementById("editDriverWA").value = w;
+    openModal("editDriverModal");
+};
+
 window.updateDriver = async () => {
     const id = document.getElementById("editDriverId").value;
     try {
@@ -103,8 +148,16 @@ window.updateDriver = async () => {
             wa: document.getElementById("editDriverWA").value
         });
         closeModal("editDriverModal");
-        Swal.fire("Selesai", "Driver diperbarui", "success");
+        Swal.fire("Selesai", "Data driver diperbarui", "success");
     } catch (e) { Swal.fire("Error", e.message, "error"); }
+};
+
+window.editProduct = (id, n, p, s) => {
+    document.getElementById("editProductId").value = id;
+    document.getElementById("editProductName").value = n;
+    document.getElementById("editProductPrice").value = p;
+    document.getElementById("editProductStock").value = s;
+    openModal("editProductModal");
 };
 
 window.updateProduct = async () => {
@@ -116,47 +169,33 @@ window.updateProduct = async () => {
             stock: Number(document.getElementById("editProductStock").value)
         });
         closeModal("editProductModal");
-        Swal.fire("Selesai", "Produk diperbarui", "success");
+        Swal.fire("Selesai", "Stok/Harga diperbarui", "success");
     } catch (e) { Swal.fire("Error", e.message, "error"); }
 };
 
-window.editDriver = (id, n, p, w) => {
-    document.getElementById("editDriverId").value = id;
-    document.getElementById("editDriverName").value = n;
-    document.getElementById("editDriverPlate").value = p;
-    document.getElementById("editDriverWA").value = w;
-    openModal("editDriverModal");
-};
-
-window.editProduct = (id, n, p, s) => {
-    document.getElementById("editProductId").value = id;
-    document.getElementById("editProductName").value = n;
-    document.getElementById("editProductPrice").value = p;
-    document.getElementById("editProductStock").value = s;
-    openModal("editProductModal");
-};
-
 window.deleteDriver = async (id, n) => {
-    if((await Swal.fire({title:'Hapus?', text:n, showCancelButton:true})).isConfirmed) await deleteDoc(doc(db,"drivers",id));
+    if((await Swal.fire({title:'Hapus Driver?', text:n, icon:'warning', showCancelButton:true})).isConfirmed) await deleteDoc(doc(db,"drivers",id));
 };
 
 window.deleteProduct = async (id, n) => {
-    if((await Swal.fire({title:'Hapus?', text:n, showCancelButton:true})).isConfirmed) await deleteDoc(doc(db,"products",id));
+    if((await Swal.fire({title:'Hapus Produk?', text:n, icon:'warning', showCancelButton:true})).isConfirmed) await deleteDoc(doc(db,"products",id));
 };
 
 window.payCommission = async (id, n, a) => {
     if(localStorage.getItem("userRole")!=="admin") return;
-    if((await Swal.fire({title:'Bayar?', text:`Rp ${a.toLocaleString()}`, showCancelButton:true})).isConfirmed) {
+    if((await Swal.fire({title:'Bayar Komisi?', text:`Lunas Rp ${a.toLocaleString()}?`, showCancelButton:true})).isConfirmed) {
         await updateDoc(doc(db,"drivers",id), {unpaidCommission: 0});
+        Swal.fire("Lunas", "Komisi telah direset", "success");
     }
 };
 
 window.sendWaReminder = (wa, n, a) => {
-    window.open(`https://wa.me/62${wa.replace(/^0/,'')}?text=Halo ${n}, komisi Rp ${a.toLocaleString()} siap diambil.`,'_blank');
+    window.open(`https://wa.me/62${wa.replace(/^0/,'')}?text=Halo ${n}, komisi Maan Susuk sebesar Rp ${a.toLocaleString()} sudah siap diambil.`,'_blank');
 };
 
-// SYNC DATA & DASHBOARD
+// === REAL-TIME SYNC & DASHBOARD ===
 function syncAll() {
+    // Sync Produk
     onSnapshot(collection(db, "products"), (snap) => {
         const table = document.getElementById("productsTableBody");
         const sel = document.getElementById("selectProduct");
@@ -171,6 +210,7 @@ function syncAll() {
         document.getElementById("dashStok").innerText = totalStok + " pcs";
     });
 
+    // Sync Drivers
     onSnapshot(collection(db, "drivers"), (snap) => {
         const table = document.getElementById("driversTableBody");
         const sel = document.getElementById("selectDriver");
@@ -196,6 +236,7 @@ function syncAll() {
     });
 }
 
+// Jalankan Inisialisasi
 checkAccess();
 syncAll();
 lucide.createIcons();
