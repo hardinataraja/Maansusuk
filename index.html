@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Maan Susuk Admin</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+    <div class="sidebar">
+        <h2>Maan Susuk</h2>
+        <button class="nav-btn active" onclick="showSection('transaksi', this)"><i data-lucide="shopping-cart"></i> Kasir</button>
+        <button class="nav-btn" onclick="showSection('dashboard', this)"><i data-lucide="layout-dashboard"></i> Dashboard</button>
+        <button class="nav-btn" onclick="showSection('drivers', this)"><i data-lucide="users"></i> Driver</button>
+        <button class="nav-btn" onclick="showSection('produk', this)"><i data-lucide="package"></i> Stok</button>
+        <button class="nav-btn btn-logout" onclick="logout()" style="margin-top: auto; color: #ef4444;">
+        <i data-lucide="log-out"></i> Logout
+    </button>
+    </div>
+
+    <div class="main">
+        <div id="transaksi" class="section active">
+            <div class="header">Kasir</div>
+            <div class="card">
+                <select id="selectDriver"><option value="">Pilih Driver</option></select>
+                <div class="input-group">
+                    <select id="selectProduct"><option value="">Pilih Produk</option></select>
+                    <input type="number" id="transQty" value="1" min="1">
+                    <button class="outline" id="btnAddItem">+ Tambah Item</button>
+                </div>
+                <div id="cartList"></div>
+                <div class="summary-box">
+                    <p>Total: <strong id="txtTotal">Rp 0</strong></p>
+                    <p class="txt-green">Komisi (50%): <strong id="txtComm">Rp 0</strong></p>
+                </div>
+                <button class="primary" id="btnCheckout">Simpan Transaksi</button>
+            </div>
+        </div>
+
+        <div id="dashboard" class="section">
+            <div class="header">Dashboard</div>
+            <div class="cards-grid">
+                <div class="card"><h4>Total Stok</h4><p id="dashStok" class="dash-val">0</p></div>
+                <div class="card"><h4>Penjualan Hari Ini</h4><p id="dashSales" class="dash-val">Rp 0</p></div>
+                <div class="card"><h4>Komisi Unpaid</h4><p id="dashComm" class="dash-val txt-red">Rp 0</p></div>
+            </div>
+        </div>
+
+        <div id="drivers" class="section">
+            <div class="header">Driver & Komisi</div>
+            <button class="primary" onclick="openModal('driverModal')">+ Tambah Driver</button>
+            <div class="card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+    <tr>
+        <th>Nama/Plat</th>
+        <th>Komisi</th>
+        <th>Status</th>
+        <th class="admin-only">Kelola</th> <th>Aksi</th>
+    </tr>
+</thead>
+                        <tbody id="driversTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="produk" class="section">
+            <div class="header">Stok Produk</div>
+            <button class="primary" onclick="openModal('productModal')">+ Tambah Produk</button>
+            <div class="card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+    <tr>
+        <th>Produk</th>
+        <th>Harga</th>
+        <th>Stok</th>
+        <th class="admin-only">Aksi</th> </tr>
+</thead>
+                        <tbody id="productsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-nav">
+    <button class="active" onclick="showSection('transaksi', this)"><i data-lucide="shopping-cart"></i>Kasir</button>
+    <button onclick="showSection('dashboard', this)"><i data-lucide="layout-dashboard"></i>Dash</button>
+    <button onclick="showSection('drivers', this)"><i data-lucide="users"></i>Driver</button>
+    <button onclick="showSection('produk', this)"><i data-lucide="package"></i>Stok</button>
+  <button onclick="logout()"><i data-lucide="log-out"></i>Keluar</button>
+
+</div>
+
+<div class="modal" id="driverModal">
+    <div class="modal-content">
+        <h3>Tambah Driver</h3>
+        <form id="addDriverForm">
+            <input id="driverName" placeholder="Nama" required>
+            <input id="driverPlate" placeholder="Plat" required>
+            <input id="driverWA" placeholder="WA (08xxx)" required>
+            <button type="submit" class="primary">Simpan</button>
+            <button type="button" class="secondary" onclick="closeModal('driverModal')">Batal</button>
+        </form>
+    </div>
+</div>
+<div class="modal" id="editDriverModal">
+    <div class="modal-content">
+        <h3>Edit Driver</h3>
+        <form id="editDriverForm">
+            <input type="hidden" id="editDriverId">
+            <input id="editDriverName" placeholder="Nama" required>
+            <input id="editDriverPlate" placeholder="Plat" required>
+            <input id="editDriverWA" placeholder="WA" required>
+            <button type="submit" class="primary">Update Driver</button>
+            <button type="button" class="secondary" onclick="closeModal('editDriverModal')">Batal</button>
+        </form>
+    </div>
+</div>
+<div class="modal" id="productModal">
+    <div class="modal-content">
+        <h3>Tambah Produk</h3>
+        <form id="addProductForm">
+            <input id="productName" placeholder="Nama Produk" required>
+            <input type="number" id="productPrice" placeholder="Harga Jual" required>
+            <input type="number" id="productStock" placeholder="Stok Awal" required>
+            <button type="submit" class="primary">Simpan</button>
+            <button type="button" class="secondary" onclick="closeModal('productModal')">Batal</button>
+        </form>
+    </div>
+</div>
+<div class="modal" id="editProductModal">
+    <div class="modal-content">
+        <h3>Edit Produk / Tambah Stok</h3>
+        <form id="editProductForm">
+            <input type="hidden" id="editProductId">
+            <input id="editProductName" placeholder="Nama Produk" required>
+            <input type="number" id="editProductPrice" placeholder="Harga Jual" required>
+            <input type="number" id="editProductStock" placeholder="Total Stok" required>
+            <button type="submit" class="primary">Update Produk</button>
+            <button type="button" class="secondary" onclick="closeModal('editProductModal')">Batal</button>
+        </form>
+    </div>
+</div>
+<script type="module" src="script.js"></script>
+</body>
+</html>

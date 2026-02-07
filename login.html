@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Login | Maan Susuk</title>
+    
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            --primary: #22c55e;
+            --dark: #0f172a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+
+        body {
+            background: #0f172a;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: pan-x pan-y;
+        }
+
+        .login-card {
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 380px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .brand { text-align: center; margin-bottom: 30px; }
+        .brand h1 { font-size: 26px; color: var(--dark); font-weight: 800; }
+        .brand span { color: var(--primary); }
+
+        .form-group { 
+            margin-bottom: 18px; 
+            position: relative; 
+            width: 100%;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px 12px 12px 42px;
+            border-radius: 12px;
+            border: 1.5px solid #e2e8f0;
+            font-size: 16px;
+            outline: none;
+            height: 52px;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1);
+        }
+
+        /* Icon Email & Lock */
+        .form-group > i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            width: 18px;
+            pointer-events: none;
+        }
+
+        /* Padding kanan extra untuk tempat teks SHOW/HIDE */
+        input#password {
+            padding-right: 65px;
+        }
+
+        /* Tombol Teks SHOW/HIDE */
+        .toggle-text {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 10px 5px;
+            z-index: 10;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: 0.3s;
+        }
+
+        .btn-login:active { transform: scale(0.98); }
+        .btn-login:disabled { background: #cbd5e1; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="brand">
+            <h1>Maan<span>Susuk</span></h1>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <i data-lucide="mail"></i>
+                <input type="email" id="email" placeholder="Email" required>
+            </div>
+            
+            <div class="form-group">
+                <i data-lucide="lock"></i>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="button" class="toggle-text" id="btnTogglePass">SHOW</button>
+            </div>
+
+            <button type="submit" class="btn-login" id="btnLogin">Masuk</button>
+        </form>
+    </div>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDDBE7Lq1Dcy_piqmFA9G76H-4LgySm4a4",
+            authDomain: "maansusuk.firebaseapp.com",
+            projectId: "maansusuk",
+            storageBucket: "maansusuk.firebasestorage.app",
+            messagingSenderId: "1002293117764",
+            appId: "1:1002293117764:web:a4aa932b34526dd9bccd11"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- Logic Show/Hide dengan Teks ---
+        const btnTogglePass = document.getElementById("btnTogglePass");
+        const passInput = document.getElementById("password");
+        
+        btnTogglePass.addEventListener("click", () => {
+            const isPass = passInput.type === "password";
+            passInput.type = isPass ? "text" : "password";
+            btnTogglePass.innerText = isPass ? "HIDE" : "SHOW";
+        });
+
+        // --- Login Logic ---
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const emailValue = document.getElementById("email").value;
+            const passwordValue = document.getElementById("password").value;
+            const btn = document.getElementById("btnLogin");
+            
+            btn.disabled = true;
+            btn.innerText = "Memproses...";
+
+            try {
+                const userCred = await signInWithEmailAndPassword(auth, emailValue, passwordValue);
+                const userDoc = await getDoc(doc(db, "users", userCred.user.uid));
+                
+                if (userDoc.exists()) {
+                    localStorage.setItem("userRole", userDoc.data().role);
+                    
+                    Toastify({
+                        text: "Login Berhasil!",
+                        backgroundColor: "#22c55e",
+                        duration: 1000,
+                        position: "center"
+                    }).showToast();
+
+                    setTimeout(() => window.location.href = "index.html", 1000);
+                } else {
+                    throw new Error("Role tidak ditemukan.");
+                }
+            } catch (err) {
+                Toastify({
+                    text: "Email/Password Salah!",
+                    backgroundColor: "#ef4444",
+                    duration: 3000,
+                    position: "center"
+                }).showToast();
+                btn.disabled = false;
+                btn.innerText = "Masuk";
+            }
+        });
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>
